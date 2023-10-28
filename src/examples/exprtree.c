@@ -1,7 +1,7 @@
-#include "../include/traverse.h"
+#include "../../include/traverse.h"
 #include <stdio.h>
 
-void build_exptree(BiTree* tree) {
+void build_exprtree(BiTree* tree) {
     /*
 
                 ("*")
@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
     list_init(&tokens, free);
     bitree_init(&expTree, free);
 
-    build_exptree(&expTree);
+    build_exprtree(&expTree);
 
     postorder(bitree_root(&expTree), &tokens);
 

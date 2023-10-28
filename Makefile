@@ -1,8 +1,10 @@
 # Paths
 SRCDIR := src
+EX_SRCDIR := $(SRCDIR)/examples
 OBJDIR := build
-SRC := $(wildcard $(SRCDIR)/*.c )
-OBJ := $(OBJDIR)/exptree
+EX_SRC := $(wildcard $(EX_SRCDIR)/*.c)
+SRC := $(wildcard $(SRCDIR)/*.c) $(EX_SRC)
+OBJ := $(patsubst $(EX_SRCDIR)/%.c, $(OBJDIR)/%, $(EX_SRC))
 
 # Flags
 CFLAGS = -Wall -Iinclude -o $@
