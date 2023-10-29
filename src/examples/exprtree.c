@@ -17,7 +17,7 @@ void build_exprtree(BiTree* tree) {
       /   \
   ("74")  ("10")
 
-    */
+     */
 
     BiTreeNode* root;
 

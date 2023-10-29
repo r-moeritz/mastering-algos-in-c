@@ -1,13 +1,14 @@
 # Paths
 SRCDIR := src
-EX_SRCDIR := $(SRCDIR)/examples
+EXDIR := $(SRCDIR)/examples
 OBJDIR := build
-EX_SRC := $(wildcard $(EX_SRCDIR)/*.c)
-SRC := $(wildcard $(SRCDIR)/*.c) $(EX_SRC)
-OBJ := $(patsubst $(EX_SRCDIR)/%.c, $(OBJDIR)/%, $(EX_SRC))
+SRCHTREE_OBJ := $(OBJDIR)/srchtree
+EXPRTREE_OBJ := $(OBJDIR)/exprtree
+EXPRTREE_SRC := $(EXDIR)/exprtree.c $(SRCDIR)/traverse.c $(SRCDIR)/list.c $(SRCDIR)/bitree.c
+SRCHTREE_SRC := $(EXDIR)/srchtree.c $(SRCDIR)/bitree.c $(SRCDIR)/bistree.c
 
 # Flags
-CFLAGS = -Wall -Iinclude -o $@
+CFLAGS = -Wall -Iinclude -g -o $@
 
 # Commands
 CC= gcc
@@ -15,14 +16,22 @@ RM := rm -rf
 MKDIR := mkdir -p
 
 # Targets
-.PHONY: all clean
+.PHONY: all clean exprtree srchtree
 
-all: $(OBJ)
+all: exprtree srchtree
 
-$(OBJ): $(SRC)
-	$(CC) $(CFLAGS) $(SRC)
+exprtree: $(EXPRTREE_OBJ)
 
-$(SRC): | $(OBJDIR)
+srchtree: $(SRCHTREE_OBJ)
+
+$(SRCHTREE_OBJ): $(SRCHTREE_SRC)
+	$(CC) $(CFLAGS) $(SRCHTREE_SRC)
+
+$(EXPRTREE_OBJ): $(EXPRTREE_SRC)
+	$(CC) $(CFLAGS) $(EXPRTREE_SRC)
+
+$(SRCHTREE_SRC): | $(OBJDIR)
+$(EXPRTREE_OBJ): | $(OBJDIR)
 
 $(OBJDIR):
 	$(MKDIR) $(OBJDIR)
