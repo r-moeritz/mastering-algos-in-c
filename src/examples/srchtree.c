@@ -51,15 +51,20 @@ int main(int argc, char** argv) {
     BisTree contacts;
     Contact* c;
     int notfound;
+    char surname[32];
 
     bistree_init(&contacts, compare_contacts_by_surname, free);
 
     build_contacts(&contacts);
 
-    c = create_contact("Kelly", NULL, NULL);
+    printf("Surname to search for? ");
+    fgets(surname, sizeof(surname) - 1, stdin);
+    surname[strlen(surname) - 1] = '\0'; // chop off trailing \n
+
+    c = create_contact(surname, NULL, NULL);
     notfound = bistree_lookup(&contacts, (void**) &c);
     if (notfound) {
-        printf("No number found for \"%s\"", c->surname);
+        printf("No number found for \"%s\"", surname);
     }
     else {
         puts("Found:");
