@@ -62,6 +62,7 @@ int main(int argc, char* argv[]) {
             }
 
             eval(tok, &s);
+            free(tok);
         }
 
         if (!stack_peek(&s)) {
