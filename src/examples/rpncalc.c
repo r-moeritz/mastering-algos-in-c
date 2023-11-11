@@ -2,35 +2,119 @@
 #include "../../include/queue.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <math.h>
 
+/**
+ * @brief The kind of token
+ */
 typedef enum TokenKind_ {
-    OPERATOR,
+    UNARY_OPERATOR,
+    BINARY_OPERATOR,
     OPERAND
 } TokenKind;
 
+/**
+ * @brief Token data structure
+ *
+ * Data structure containing kind and value of a token.
+ */
 typedef struct Token_ {
     TokenKind kind;
-    int value;
+    double value;
 } Token;
 
+/**
+ * @brief Identifies the operator
+ */
 typedef enum Operator_ {
     ADDITION = 1,
     SUBTRACTION = 2,
     MULTIPLICATION = 3,
-    DIVISION = 4
+    DIVISION = 4,
+    SQUARE_ROOT = 5
 } Operator;
 
-int read_line(FILE* stream, char* buffer, int size);
+/**
+ * @brief Read a line of input from stream into buffer.
+ *
+ * Read at most count characters from stream into buffer,
+ * stopping at a newline, EOF, or when count characters
+ * have been read, whichever comes first.
+ *
+ * @param stream stream The stream from which to read
+ * @param buffer A buffer to store the characters read
+ * @param count The maximum number of characters to read
+ * @return 0 on success or an error code on failure.
+ */
+int read_line(FILE* stream, char* buffer, int count);
 
+/**
+ * @brief Split a string into tokens
+ *
+ * Split the str into tokens by whitespace.
+ *
+ * @param str The string to split
+ * @param tokens An initialized queue that will be filled with tokens
+ * @return 0 on success on an error code on failure.
+ */
 int tokenize(char* str, Queue* tokens);
 
+/**
+ * @brief Parse a string
+ *
+ * Parse a string into a Token, determining whether it is
+ * an operator or operand.
+ *
+ * @param str The string to be parsed
+ * @return An allocated Token struct containing type and value or NULL on error.
+ */
 Token* parse(const char* str);
 
+/**
+ * @brief Evaluate a token
+ *
+ * Evaluate a token. If the token is an operand it will be pushed onto the
+ * stack, s. If it is an operator, the operands on the stack will be popped
+ * and the operator applied, with the result being pushed onto the stack.
+ *
+ * @param token The token to evaluate
+ * @param s An initialized stack
+ */
 void eval(const Token* token, Stack* s);
 
-int apply(Operator operator, int operand1, int operand2);
+/**
+ * @brief Apply a binary operator
+ *
+ * Apply a binary operator to two operands.
+ *
+ * @param operator The operator to apply
+ * @param operand1 The first operand
+ * @param operand2 The second operand
+ * @return The result of applying the operator to the operands
+ */
+double apply_binary(Operator operator, double operand1, double operand2);
 
-Token* new_token(TokenKind kind, int value);
+/**
+ * @brief Apply a unary operator
+ *
+ * Apply a unary operator to an operand
+ *
+ * @param operator The operator to apply
+ * @param operand The operand
+ * @return The result of applying the operator to the operand
+ */
+double apply_unary(Operator operator, double operand);
+
+/**
+ * @brief Allocate and initialize a token
+ *
+ * Allocate memory for a token and set its kind and value.
+ * @param kind The kind of token
+ * @param value The value of the token
+ * @return An allocated and initialized Token struct or NULL on error.
+ */
+Token* new_token(TokenKind kind, double value);
 
 int main(int argc, char* argv[]) {
     Stack s;
@@ -38,7 +122,7 @@ int main(int argc, char* argv[]) {
     char buffer[128];
     char* str;
     Token* tok;
-    int* res;
+    double* res;
 
     queue_init(&tokens, free);
     stack_init(&s, free);
@@ -70,7 +154,7 @@ int main(int argc, char* argv[]) {
         }
 
         stack_pop(&s, (void** ) &res);
-        printf("%d\n", *res);
+        printf("%f\n", *res);
         free(res);
     }
 
@@ -95,50 +179,54 @@ int tokenize(char* str, Queue* tokens) {
 
 Token* parse(const char* str) {
     TokenKind kind;
-    int value;
+    double value;
 
     if (!strcmp("+", str)) {
-        kind = OPERATOR;
+        kind = BINARY_OPERATOR;
         value = ADDITION;
     }
     else if (!strcmp("-", str)) {
-        kind = OPERATOR;
+        kind = BINARY_OPERATOR;
         value = SUBTRACTION;
     }
     else if (!strcmp("/", str)) {
-        kind = OPERATOR;
+        kind = BINARY_OPERATOR;
         value = DIVISION;
     }
     else if (!strcmp("*", str)) {
-        kind = OPERATOR;
+        kind = BINARY_OPERATOR;
         value = MULTIPLICATION;
+    }
+    else if (!strcmp("sqrt", str)) {
+        kind = UNARY_OPERATOR;
+        value = SQUARE_ROOT;
     }
     else {
         kind = OPERAND;
-        value = atoi(str);
+        value = strtod(str, NULL);
     }
 
     return new_token(kind, value);
 }
 
 void eval(const Token* tok, Stack* s) {
-    int* mem = NULL;
-    int* n;
+    double* mem = NULL;
+    double* n;
 
     if (tok->kind == OPERAND) {
-        n = malloc(sizeof(int));
+        n = malloc(sizeof(double));
         if (!n) {
             return;
         }
         *n = tok->value;
         stack_push(s, n);
     }
-    else {
+    else if (tok->kind == BINARY_OPERATOR) {
         while (stack_peek(s)) {
             stack_pop(s, (void**) &n);
 
             if (mem) {
-                *mem = apply(tok->value, *n, *mem);
+                *mem = apply_binary(tok->value, *n, *mem);
                 free(n);
             }
             else {
@@ -150,9 +238,16 @@ void eval(const Token* tok, Stack* s) {
             stack_push(s, mem);
         }
     }
+    else { // unary operator
+        stack_pop(s, (void**) &n);
+
+        *n = apply_unary(tok->value, *n);
+
+        stack_push(s, n);
+    }
 }
 
-int apply(Operator operator, int operand1, int operand2) {
+double apply_binary(Operator operator, double operand1, double operand2) {
     switch (operator) {
         case ADDITION:
             return operand1 + operand2;
@@ -165,12 +260,23 @@ int apply(Operator operator, int operand1, int operand2) {
 
         case DIVISION:
             return operand1 / operand2;
-    }
 
-    return 0;
+        default:
+            return 0;
+    }
 }
 
-Token* new_token(TokenKind kind, int value) {
+double apply_unary(Operator operator, double operand) {
+    switch (operator) {
+        case SQUARE_ROOT:
+            return sqrt(operand);
+
+        default:
+            return 0;
+    }
+}
+
+Token* new_token(TokenKind kind, double value) {
     Token* tok = malloc(sizeof(Token));
     if (!tok) {
         return NULL;
