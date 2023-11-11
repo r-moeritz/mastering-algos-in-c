@@ -4,6 +4,17 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <threads.h>
+
+/**
+ * @brief The calculator
+ *
+ * Data structure containing calculator data.
+ */
+typedef struct Calculator_ {
+    Stack* stack; /**< The calculator's i/o stack */
+    double memory; /**< User memory */
+} Calculator;
 
 /**
  * @brief The kind of token
@@ -21,8 +32,8 @@ typedef enum TokenKind_ {
  * Data structure containing kind and value of a token.
  */
 typedef struct Token_ {
-    TokenKind kind;
-    double value;
+    TokenKind kind; /**< The kind of token */
+    double value; /**< The token value */
 } Token;
 
 /**
@@ -30,9 +41,11 @@ typedef struct Token_ {
  */
 typedef enum Operator_ {
     // Nullary
-    CLEAR,
-    CLEAR_ALL,
-    PRINT,
+    CLEAR, /**< Pop off the top of the stack */
+    CLEAR_ALL, /**< Clear the stack and user memory */
+    SET_MEMORY, /**< Set user memory to the top of the stack */
+    CLEAR_MEMORY, /**< Clear user memory */
+    RECALL_MEMORY, /**< Push user memory onto the stack */
 
     // Unary
     SQUARE_ROOT,
@@ -84,13 +97,12 @@ Token* parse(const char* str);
  * @brief Evaluate a token
  *
  * Evaluate a token. If the token is an operand it will be pushed onto the
- * stack, s. If it is an operator, the operands on the stack will be popped
- * and the operator applied, with the result being pushed onto the stack.
+ * calculator's stack. If it is an operator, it will be applied.
  *
  * @param token The token to evaluate
- * @param s An initialized stack
+ * @param calc The calculator data structure
  */
-void eval(const Token* token, Stack* s);
+void eval(const Token* token, Calculator* calc);
 
 /**
  * @brief Apply a binary operator
@@ -120,13 +132,29 @@ double apply_unary(Operator operator, double operand);
  *
  * Apply a special nullary operator that doesn't operate on operands. Rather
  * than produce a result, this kind of operator is applied only for its
- * side-effects, which may involve manupalting the stack or producing output.
+ * side-effect of manipulating the calculator's stack and/or memory.
  *
  * @param operator The operator to apply
- * @param s The stack
- * @param output An output stream
+ * @param calc The calculator
  */
-void apply_nullary(Operator operator, Stack* s, FILE* output);
+void apply_nullary(Operator operator, Calculator* calc);
+
+/**
+ * @brief Print the top stack element
+ *
+ * Print the top element on the stack to a stream.
+ *
+ * @param s The stack
+ * @param stream The stream to print to
+ */
+void print_top(Stack* s, FILE* stream);
+
+/**
+ * @brief Initialize a calculator.
+ *
+ * Allocate memory for & initialize the calculator stack & zero out memory.
+ */
+void calculator_init(Calculator* calc);
 
 /**
  * @brief Allocate and initialize a token
@@ -139,15 +167,15 @@ void apply_nullary(Operator operator, Stack* s, FILE* output);
  */
 Token* new_token(TokenKind kind, double value);
 
-int main(int argc, char* argv[]) {
-    Stack s;
+int main(void) {
+    Calculator calc;
     Queue tokens;
     char buffer[128];
     char* str;
     Token* tok;
 
+    calculator_init(&calc);
     queue_init(&tokens, free);
-    stack_init(&s, free);
 
     for (;;) {
         if (read_line(stdin, buffer, sizeof(buffer))) {
@@ -167,11 +195,11 @@ int main(int argc, char* argv[]) {
                 break;
             }
 
-            eval(tok, &s);
+            eval(tok, &calc);
             free(tok);
         }
 
-        apply_nullary(PRINT, &s, stdout);
+        print_top(calc.stack, stdout);
     }
 
     return 0;
@@ -225,6 +253,18 @@ Token* parse(const char* str) {
         kind = NULLARY_OPERATOR;
         value = CLEAR;
     }
+    else if (!strcmp("ms", str)) {
+        kind = NULLARY_OPERATOR;
+        value = SET_MEMORY;
+    }
+    else if (!strcmp("mc", str)) {
+        kind = NULLARY_OPERATOR;
+        value = CLEAR_MEMORY;
+    }
+    else if (!strcmp("mr", str)) {
+        kind = NULLARY_OPERATOR;
+        value = RECALL_MEMORY;
+    }
     else {
         kind = OPERAND;
         value = strtod(str, NULL);
@@ -233,44 +273,45 @@ Token* parse(const char* str) {
     return new_token(kind, value);
 }
 
-void eval(const Token* tok, Stack* s) {
-    double* mem = NULL;
-    double* n;
+void eval(const Token* tok, Calculator* calc) {
+    double* n1;
+    double* n2 = NULL;
+    Stack* s = calc->stack;
 
     if (tok->kind == OPERAND) {
-        n = malloc(sizeof(double));
-        if (!n) {
+        n1 = malloc(sizeof(double));
+        if (!n1) {
             return;
         }
-        *n = tok->value;
-        stack_push(s, n);
+        *n1 = tok->value;
+        stack_push(s, n1);
     }
     else if (tok->kind == BINARY_OPERATOR) {
         while (stack_peek(s)) {
-            stack_pop(s, (void**) &n);
+            stack_pop(s, (void**) &n1);
 
-            if (mem) {
-                *mem = apply_binary(tok->value, *n, *mem);
-                free(n);
+            if (n2) {
+                *n2 = apply_binary(tok->value, *n1, *n2);
+                free(n1);
             }
             else {
-                mem = n;
+                n2 = n1;
             }
         }
 
-        if (mem) {
-            stack_push(s, mem);
+        if (n2) {
+            stack_push(s, n2);
         }
     }
     else if (tok->kind == UNARY_OPERATOR) {
-        stack_pop(s, (void**) &n);
+        stack_pop(s, (void**) &n1);
 
-        *n = apply_unary(tok->value, *n);
+        *n1 = apply_unary(tok->value, *n1);
 
-        stack_push(s, n);
+        stack_push(s, n1);
     }
     else { // nullary operator
-        apply_nullary(tok->value, s, stdout);
+        apply_nullary(tok->value, calc);
     }
 }
 
@@ -303,28 +344,63 @@ double apply_unary(Operator operator, double operand) {
     }
 }
 
-void apply_nullary(Operator operator, Stack* s, FILE* output) {
+void apply_nullary(Operator operator, Calculator* calc) {
     double* n;
+    Stack* s = calc->stack;
 
     switch (operator) {
         case CLEAR:
             stack_pop(s, (void**) &n);
+            free(n);
             break;
 
         case CLEAR_ALL:
             stack_destroy(s);
+            calc->memory = 0;
             break;
 
-        case PRINT:
+        case SET_MEMORY:
             n = stack_peek(s);
             if (n) {
-                fprintf(output, "%f\n", *n);
+                calc->memory = *n;
             }
+            break;
+
+        case CLEAR_MEMORY:
+            calc->memory = 0;
+            break;
+
+        case RECALL_MEMORY:
+            n = malloc(sizeof(double));
+            if (!n) {
+                break;
+            }
+            *n = calc->memory;
+            stack_push(s, n);
             break;
 
         default:
             break;
     }
+}
+
+void print_top(Stack* s, FILE* stream) {
+    double* n = stack_peek(s);
+    if (n) {
+        fprintf(stream, "%f\n", *n);
+    }
+}
+
+void calculator_init(Calculator* calc) {
+    calc->stack = malloc(sizeof(Stack));
+    if (!calc->stack) {
+        free(calc);
+        return;
+    }
+
+    stack_init(calc->stack, free);
+
+    calc->memory = 0;
 }
 
 Token* new_token(TokenKind kind, double value) {

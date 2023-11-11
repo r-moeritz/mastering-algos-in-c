@@ -10,7 +10,7 @@ EXPRTREE_SRC := $(EXDIR)/exprtree.c $(SRCDIR)/traverse.c $(SRCDIR)/list.c $(SRCD
 RPNCALC_SRC := $(EXDIR)/rpncalc.c $(SRCDIR)/stack.c $(SRCDIR)/queue.c $(SRCDIR)/list.c
 
 # Flags
-CFLAGS = -Wall -Iinclude -g -lm -o $@
+CFLAGS = -Wall -Wextra -Iinclude -g -lm -o $@
 
 # Commands
 CC= gcc
