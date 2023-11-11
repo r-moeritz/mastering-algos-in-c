@@ -9,6 +9,7 @@
  * @brief The kind of token
  */
 typedef enum TokenKind_ {
+    NULLARY_OPERATOR,
     UNARY_OPERATOR,
     BINARY_OPERATOR,
     OPERAND
@@ -28,11 +29,19 @@ typedef struct Token_ {
  * @brief Identifies the operator
  */
 typedef enum Operator_ {
-    ADDITION = 1,
-    SUBTRACTION = 2,
-    MULTIPLICATION = 3,
-    DIVISION = 4,
-    SQUARE_ROOT = 5
+    // Nullary
+    CLEAR,
+    CLEAR_ALL,
+    PRINT,
+
+    // Unary
+    SQUARE_ROOT,
+
+    // Binary
+    ADDITION,
+    SUBTRACTION,
+    MULTIPLICATION,
+    DIVISION
 } Operator;
 
 /**
@@ -107,9 +116,23 @@ double apply_binary(Operator operator, double operand1, double operand2);
 double apply_unary(Operator operator, double operand);
 
 /**
+ * @brief Apply a nullary operator
+ *
+ * Apply a special nullary operator that doesn't operate on operands. Rather
+ * than produce a result, this kind of operator is applied only for its
+ * side-effects, which may involve manupalting the stack or producing output.
+ *
+ * @param operator The operator to apply
+ * @param s The stack
+ * @param output An output stream
+ */
+void apply_nullary(Operator operator, Stack* s, FILE* output);
+
+/**
  * @brief Allocate and initialize a token
  *
  * Allocate memory for a token and set its kind and value.
+ *
  * @param kind The kind of token
  * @param value The value of the token
  * @return An allocated and initialized Token struct or NULL on error.
@@ -122,7 +145,6 @@ int main(int argc, char* argv[]) {
     char buffer[128];
     char* str;
     Token* tok;
-    double* res;
 
     queue_init(&tokens, free);
     stack_init(&s, free);
@@ -149,13 +171,7 @@ int main(int argc, char* argv[]) {
             free(tok);
         }
 
-        if (!stack_peek(&s)) {
-            break;
-        }
-
-        stack_pop(&s, (void** ) &res);
-        printf("%f\n", *res);
-        free(res);
+        apply_nullary(PRINT, &s, stdout);
     }
 
     return 0;
@@ -201,6 +217,14 @@ Token* parse(const char* str) {
         kind = UNARY_OPERATOR;
         value = SQUARE_ROOT;
     }
+    else if (!strcmp("ca", str)) {
+        kind = NULLARY_OPERATOR;
+        value = CLEAR_ALL;
+    }
+    else if (!strcmp("c", str)) {
+        kind = NULLARY_OPERATOR;
+        value = CLEAR;
+    }
     else {
         kind = OPERAND;
         value = strtod(str, NULL);
@@ -238,12 +262,15 @@ void eval(const Token* tok, Stack* s) {
             stack_push(s, mem);
         }
     }
-    else { // unary operator
+    else if (tok->kind == UNARY_OPERATOR) {
         stack_pop(s, (void**) &n);
 
         *n = apply_unary(tok->value, *n);
 
         stack_push(s, n);
+    }
+    else { // nullary operator
+        apply_nullary(tok->value, s, stdout);
     }
 }
 
@@ -273,6 +300,30 @@ double apply_unary(Operator operator, double operand) {
 
         default:
             return 0;
+    }
+}
+
+void apply_nullary(Operator operator, Stack* s, FILE* output) {
+    double* n;
+
+    switch (operator) {
+        case CLEAR:
+            stack_pop(s, (void**) &n);
+            break;
+
+        case CLEAR_ALL:
+            stack_destroy(s);
+            break;
+
+        case PRINT:
+            n = stack_peek(s);
+            if (n) {
+                fprintf(output, "%f\n", *n);
+            }
+            break;
+
+        default:
+            break;
     }
 }
 
