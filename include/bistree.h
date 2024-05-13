@@ -8,7 +8,7 @@
 #define AVL_BALANCED 0
 #define AVL_RIGHT_HEAVY -1
 
-typedef struct AvlNode_ {
+typedef struct {
     void* data;
     int hidden;
     int factor;

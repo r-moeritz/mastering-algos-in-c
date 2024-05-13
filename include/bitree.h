@@ -9,7 +9,7 @@ typedef struct BiTreeNode_ {
     struct BiTreeNode_* right;
 } BiTreeNode;
 
-typedef struct BiTree_ {
+typedef struct {
     int size;
     int (*compare)(const void* key1, const void* key2);
     void (*destroy)(void* data);
