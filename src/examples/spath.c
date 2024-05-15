@@ -76,14 +76,18 @@ int main(void) {
     elem = list_head(&graph_adjlists(&graph));
     BfsVertex* start = ((AdjList*)list_data(elem))->vertex;
 
-    bfs(&graph, start, &hops);
+    int rc = bfs(&graph, start, &hops);
+    if (rc) {
+        fputs("bfs encountered an error, exiting...\n", stderr);
+        return 1;
+    }
 
-    printf("Shortest path from %s to all other nodes\n", (const char*) start->data);
+    printf("shortest path from %s to all other nodes\n", (const char*) start->data);
 
     for (elem = list_head(&hops); elem != NULL; elem = list_next(elem)) {
-        BfsVertex* v1 = ((AdjList*)list_data(elem))->vertex;
+        BfsVertex* v1 = (BfsVertex*)list_data(elem);
         for (ListElmt* elem2 = list_head(v1->path); elem2 != NULL; elem2 = list_next(elem2)) {
-            BfsVertex* v2 = ((AdjList*)list_data(elem2))->vertex;
+            BfsVertex* v2 = (BfsVertex*)list_data(elem2);
             printf("%s, ", (const char*) v2->data);
         }
         puts(v1->data);
