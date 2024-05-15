@@ -4,7 +4,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
-#include <threads.h>
 
 /**
  * @brief The calculator

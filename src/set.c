@@ -134,7 +134,7 @@ int set_is_subset(const Set* set1, const Set* set2) {
         return 0;
     }
 
-    for (member = list_head(set1); member != NULL; list_next(member)) {
+    for (member = list_head(set1); member != NULL; member = list_next(member)) {
         if (!set_is_member(set2, list_data(member))) {
             return 0;
         }

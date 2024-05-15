@@ -37,7 +37,7 @@ void build_exprtree(BiTree* tree) {
     bitree_ins_right(tree, root->right, "17");
 }
 
-int main(int argc, char** argv) {
+int main(void) {
     List tokens;
     ListElmt* element;
     BiTree expTree;

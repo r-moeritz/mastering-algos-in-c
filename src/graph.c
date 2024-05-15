@@ -147,3 +147,63 @@ int graph_rem_vertex(Graph* graph, void** data) {
     graph->vcount -= 1;
     return 0;
 }
+
+int graph_rem_edge(Graph* graph, void* data1, void** data2) {
+    ListElmt* element;
+
+    /* Locate the adjacency list for the 1st vertex */
+    for (element = list_head(&graph->adjlists); element != NULL; element = list_next(element)) {
+        if (graph->match(data1, ((AdjList*)list_data(element))->vertex)) {
+            break;
+        }
+    }
+
+    if (!element) {
+        return -1;
+    }
+
+    /* Remove the 2nd vertex from the adjacency list of the 1st vertex */
+    if (set_remove(&((AdjList*)list_data(element))->adjacent, data2)) {
+        return -1;
+    }
+
+    graph->ecount -= 1;
+    return 0;
+}
+
+int graph_adjlist(const Graph* graph, const void* data, AdjList** adjlist) {
+    ListElmt* element;
+
+    /* Locate the adjacency list for the vertex */
+    for (element = list_head(&graph->adjlists); element != NULL; element = list_next(element)) {
+        if (graph->match(data, ((AdjList*)list_data(element))->vertex)) {
+            break;
+        }
+    }
+
+    if (!element) {
+        return -1;
+    }
+
+    /* Pass back the adjacency list for the vertex */
+    *adjlist = list_data(element);
+    return 0;
+}
+
+int graph_is_adjacent(const Graph* graph, const void* data1, const void* data2) {
+    ListElmt* element;
+
+    /* Locate the adjacency list of the 1st vertex */
+    for (element = list_head(&graph->adjlists); element != NULL; element = list_next(element)) {
+        if (graph->match(data1, ((AdjList*)list_data(element))->vertex)) {
+            break;
+        }
+    }
+
+    if (!element) {
+        return 0;
+    }
+
+    /* Return whether the 2nd vertex is in the adjacency list of the 1st */
+    return set_is_member(&((AdjList*)list_data(element))->adjacent, data2);
+}

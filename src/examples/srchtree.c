@@ -47,7 +47,7 @@ int compare_contacts_by_surname(const void* contact1, const void* contact2) {
     return strcmp(c1->surname, c2->surname);
 }
 
-int main(int argc, char** argv) {
+int main(void) {
     BisTree contacts;
     Contact* c;
     int notfound;
@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
         printf("%s, %s: %s", c->surname, c->name, c->phone);
     }
 
-    puts("");
+    puts(""); /* final newline */
 
     return 0;
 }
