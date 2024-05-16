@@ -7,7 +7,6 @@ typedef struct {
     void* data;
     VertexColour colour;
     int hops;
-    List* path;
 } BfsVertex;
 
 int bfs(Graph* graph, BfsVertex* start, List* hops);

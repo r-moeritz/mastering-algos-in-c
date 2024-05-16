@@ -45,6 +45,7 @@ int graph_ins_vertex(Graph* graph, const void* data) {
         }
     }
 
+    /* Insert the vertex */
     adjlist = malloc(sizeof(AdjList));
     if (!adjlist) {
         return -1;
@@ -68,16 +69,6 @@ int graph_ins_edge(Graph* graph, const void* data1, const void* data2) {
 
     /* Don't allow insertion of an edge without both its vertices in the graph */
     for (element = list_head(&graph->adjlists); element != NULL; element = list_next(element)) {
-        if (graph->match(data1, ((AdjList*)list_data(element))->vertex)) {
-            break;
-        }
-    }
-
-    if (!element) {
-        return -1; /* 1st vertex not found */
-    }
-
-    for (element = list_head(&graph->adjlists); element != NULL; element = list_next(element)) {
         if (graph->match(data2, ((AdjList*)list_data(element))->vertex)) {
             break;
         }
@@ -85,6 +76,16 @@ int graph_ins_edge(Graph* graph, const void* data1, const void* data2) {
 
     if (!element) {
         return -1; /* 2nd vertex not found */
+    }
+
+    for (element = list_head(&graph->adjlists); element != NULL; element = list_next(element)) {
+        if (graph->match(data1, ((AdjList*)list_data(element))->vertex)) {
+            break;
+        }
+    }
+
+    if (!element) {
+        return -1; /* 1st vertex not found */
     }
 
     /* Insert 2nd vertex into the adjacency list of the 1st vertex */

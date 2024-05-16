@@ -62,15 +62,6 @@ int bfs(Graph* graph, BfsVertex* start, List* hops) {
 
             clr_vertex->colour = GRAY;
             clr_vertex->hops = ((BfsVertex*)adjlist->vertex)->hops + 1;
-            if (!clr_vertex->path) {
-                clr_vertex->path = malloc(sizeof(List));
-                if (!clr_vertex->path) {
-                   queue_destroy(&queue);
-                   return -1;
-                }
-                list_init(clr_vertex->path, NULL);
-            }
-            list_ins_next(clr_vertex->path, list_tail(clr_vertex->path), adj_vertex);
 
             if (queue_enqueue(&queue, clr_adjlist)) {
                 queue_destroy(&queue);
@@ -79,7 +70,7 @@ int bfs(Graph* graph, BfsVertex* start, List* hops) {
         }
 
         /* Dequeue the current adjacency list & colour its vertex black */
-        if (queue_dequeue(&queue, (void**)&adjlist)) {
+        if (!queue_dequeue(&queue, (void**)&adjlist)) {
             ((BfsVertex*)adjlist->vertex)->colour = BLACK;
         }
         else {
@@ -96,8 +87,9 @@ int bfs(Graph* graph, BfsVertex* start, List* hops) {
     for (element = list_head(&graph_adjlists(graph)); element != NULL; element = list_next(element)) {
         clr_vertex = ((AdjList*)list_data(element))->vertex;
 
-        /* Skip vertices that were not visited (those with hop counts of -1) */
-        if (clr_vertex->hops < 0) {
+        /* Skip vertices that were not visited (those with hop counts of -1),
+         * as well as the starting node (hop count of 0), */
+        if (clr_vertex->hops <= 0) {
             continue;
         }
 

@@ -49,19 +49,10 @@ void build_graph(Graph* graph) {
 }
 
 int compare_vertices_by_name(const void* vertex1, const void* vertex2) {
-    const BfsVertex* v1 = (const BfsVertex*) vertex1;
-    const BfsVertex* v2 = (const BfsVertex*) vertex2;
+    const char* s1 = ((const BfsVertex*) vertex1)->data;
+    const char* s2 = ((const BfsVertex*) vertex2)->data;
 
-    return strcmp(v1->data, v2->data);
-}
-
-void free_vertex(void* vertex) {
-    BfsVertex* v = (BfsVertex*)vertex;
-    if (v->path) {
-        list_destroy(v->path);
-        free(v->path);
-    }
-    free(v);
+    return strcmp(s1, s2) == 0;
 }
 
 int main(void) {
@@ -69,7 +60,7 @@ int main(void) {
     List hops;
     ListElmt* elem;
 
-    graph_init(&graph, compare_vertices_by_name, free_vertex);
+    graph_init(&graph, compare_vertices_by_name, free);
 
     build_graph(&graph);
 
@@ -85,12 +76,8 @@ int main(void) {
     printf("shortest path from %s to all other nodes\n", (const char*) start->data);
 
     for (elem = list_head(&hops); elem != NULL; elem = list_next(elem)) {
-        BfsVertex* v1 = (BfsVertex*)list_data(elem);
-        for (ListElmt* elem2 = list_head(v1->path); elem2 != NULL; elem2 = list_next(elem2)) {
-            BfsVertex* v2 = (BfsVertex*)list_data(elem2);
-            printf("%s, ", (const char*) v2->data);
-        }
-        puts(v1->data);
+        BfsVertex* v = (BfsVertex*)list_data(elem);
+        printf("%s: %d hops\n", (const  char*)v->data, v->hops);
     }
 
     return 0;
