@@ -9,6 +9,13 @@ BfsVertex* create_vertex(const char* name) {
     }
 
     v->data = (void*) name;
+
+    v->path = malloc(sizeof(List));
+    if (!v->path) {
+        free(v);
+        return NULL;
+    }
+
     return v;
 }
 
@@ -77,7 +84,12 @@ int main(void) {
 
     for (elem = list_head(&hops); elem != NULL; elem = list_next(elem)) {
         BfsVertex* v = (BfsVertex*)list_data(elem);
-        printf("%s: %d hops\n", (const  char*)v->data, v->hops);
+        printf("%s = %d hops: ", (const char*) v->data, list_size(v->path));
+        ListElmt* elem2;
+        for (elem2 = list_head(v->path); elem2 != NULL; elem2 = list_next(elem2)) {
+            printf("%s ", (const char*)list_data(elem2));
+        }
+        puts("");
     }
 
     return 0;

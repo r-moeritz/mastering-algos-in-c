@@ -17,12 +17,10 @@ int bfs(Graph* graph, BfsVertex* start, List* hops) {
         if (graph->match(clr_vertex, start)) {
             /* Initialize the start vertex */
             clr_vertex->colour = GRAY;
-            clr_vertex->hops = 0;
         }
         else {
             /* Initialize a vertex other than the start vertex */
             clr_vertex->colour = WHITE;
-            clr_vertex->hops = -1;
         }
     }
 
@@ -61,7 +59,13 @@ int bfs(Graph* graph, BfsVertex* start, List* hops) {
             }
 
             clr_vertex->colour = GRAY;
-            clr_vertex->hops = ((BfsVertex*)adjlist->vertex)->hops + 1;
+
+            /* Record the path we took to get to this vertex */
+            ListElmt* elem;
+            for (elem = list_head(((BfsVertex*)adjlist->vertex)->path); elem != NULL; elem = list_next(elem)) {
+                list_ins_next(clr_vertex->path, list_tail(clr_vertex->path), list_data(elem));
+            }
+            list_ins_next(clr_vertex->path, list_tail(clr_vertex->path), adj_vertex->data);
 
             if (queue_enqueue(&queue, clr_adjlist)) {
                 queue_destroy(&queue);
@@ -87,9 +91,8 @@ int bfs(Graph* graph, BfsVertex* start, List* hops) {
     for (element = list_head(&graph_adjlists(graph)); element != NULL; element = list_next(element)) {
         clr_vertex = ((AdjList*)list_data(element))->vertex;
 
-        /* Skip vertices that were not visited (those with hop counts of -1),
-         * as well as the starting node (hop count of 0), */
-        if (clr_vertex->hops <= 0) {
+        /* Skip vertices that were not visited, as well as the starting node */
+        if (!list_size(clr_vertex->path)) {
             continue;
         }
 
